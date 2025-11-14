@@ -33,9 +33,8 @@ This server demonstrates non-blocking network I/O using `epoll` and supports con
 ## Building
 
 ```bash
-git clone <repository-url>
+git clone git@github.com:DrChrisHax/Proxy_Server.git
 cd proxy_server
-make clean && make
 
 This will compile the server and place the binary in the ./bins directory:
 
@@ -95,17 +94,8 @@ proxy_server/
 
 Notes
 
-SIGPIPE is ignored to prevent crashes when writing to disconnected clients.
-
 Non-blocking sockets prevent the server from hanging on slow or inactive clients.
 
 Currently, this proxy server accepts connections but does not forward traffic. This can be extended for full proxy functionality.
 
-License
-
-MIT License
-
-Group Members
-
-[Our Names]
-
+Licensed under the MIT License. See LICENSE file for details.
