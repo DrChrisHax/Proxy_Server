@@ -2,7 +2,8 @@
 #include "connection.h"
 
 #include <cstring>
-
+#include <iostream>
+#include <iterator>
 
 namespace core::protocol {
 
@@ -22,9 +23,7 @@ namespace core::protocol {
                 const uint8_t version = std::to_integer<uint8_t>(buf[0]);
                 const uint8_t command = std::to_integer<uint8_t>(buf[1]);
 
-                destination_port_ =
-                    std::to_integer<uint16_t>(buf[2]) << 8 |
-                    std::to_integer<uint16_t>(buf[3]);
+                destination_port_ = std::to_integer<uint16_t>(buf[2]) << 8 | std::to_integer<uint16_t>(buf[3]);
 
                 for(int i = 0; i < 4; i++) {
                     destination_ip_[i] = buf[4 + i];

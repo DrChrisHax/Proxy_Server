@@ -5,6 +5,7 @@
 #include "protocol/protocol.h"
 #include "protocol/socks5.h"
 #include "protocol/socks4.h"
+#include "protocol/socks4a.h"
 
 #include <cerrno>
 #include <cstring>
@@ -166,6 +167,8 @@ namespace core {
                 protocol_ = std::make_unique<core::protocol::Socks4>();
                 return true;
             case core::protocol::ProtocolType::kSocks4a:
+                protocol_ = std::make_unique<core::protocol::Socks4a>();
+                return true;
             case core::protocol::ProtocolType::kUnsupported:
             case core::protocol::ProtocolType::kUnknown:
             default:

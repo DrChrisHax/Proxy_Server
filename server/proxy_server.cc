@@ -4,6 +4,7 @@
 #include "protocol/protocol.h"
 #include "protocol/socks5.h"
 #include "protocol/socks4.h"
+#include "protocol/socks4a.h"
 #include "utils/string_utils.h"
 
 #include <cstring>
@@ -157,8 +158,8 @@ namespace server {
                     }
 
                     // Uncomment below to see user requests outputed to the console
-                    //std::cout << core::utils::bytesToReadableString(connection.receive_buffer_) << std::endl;
-                    //std::cout << core::utils::bytesToHex(connection->receive_buffer_) << std::endl;
+                    // std::cout << core::utils::bytesToReadableString(connection->receive_buffer_) << std::endl;
+                    // std::cout << core::utils::bytesToHex(connection->receive_buffer_) << std::endl;
 
                     if (connection->role_ == core::ConnectionRole::Client) {
 
@@ -189,6 +190,30 @@ namespace server {
                                         break;
                                     } 
                                     case core::protocol::ProtocolType::kSocks4a: {
+                                        auto* socks4a = dynamic_cast<core::protocol::Socks4a*>(connection->protocol_.get());
+
+                                        const std::string& host = socks4a->destination_domain();
+                                        (void)host;
+                                        //TODO: Resolve host to ip once dns implemented
+                                        // 
+                                        // Something like
+                                        // auto ip_opt = core::ResolveHostnameToIPv4(host);
+                                        // if (!ip_opt) {
+                                        //     // Resolution failed: close or mark failed (your call)
+                                        //     connection->closed_ = true;
+                                        //     break;
+                                        // }
+                                        // socks4a->SetResolvedIP(ip_opt->data());
+                                        // if (connection->peer_socket_id_ == -1 && 
+                                        //     socks4a->state() == core::protocol::Socks4::State::Established) {
+                                        //     core::CreateUpstreamTCPConnection (
+                                        //         poller_,
+                                        //         connections_,
+                                        //         *connection,
+                                        //         socks4a->destination_ip(),
+                                        //         socks4a->destination_port()
+                                        //     );
+                                        // }
                                         break;
                                     }
                                     case core::protocol::ProtocolType::kSocks5: {
@@ -201,6 +226,10 @@ namespace server {
                                         break;
                                     }
                                 }             
+                            } else {
+                                std::cout << "No matching protocol found" << std::endl;
+                                std::cout << core::utils::bytesToReadableString(connection->receive_buffer_) << std::endl;
+                                HealthResponse(*connection);
                             }
                     } else if (connection->role_ == core::ConnectionRole::Upstream) {
                         // The client's connection protocol can handle forwarding upstream

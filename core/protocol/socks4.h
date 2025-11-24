@@ -33,11 +33,11 @@ namespace core::protocol {
         uint16_t destination_port() const noexcept { return destination_port_; }
         const std::byte* destination_ip() const noexcept { return destination_ip_; }
 
-    private:
+    protected:
         State state_{State::Init};
 
-        uint16_t destination_port_; // network byte order
-        std::byte destination_ip_[4]; // network byte order
+        uint16_t destination_port_;
+        std::byte destination_ip_[4];
         std::string user_id_;
     };
 
