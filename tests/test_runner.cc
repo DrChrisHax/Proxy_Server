@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
 // =============================================================================
 // Helper Functions
 // =============================================================================
-static inline bool test_helper(std::string_view expected, std::string_view result) {
+bool test_helper(std::string_view expected, std::string_view result) {
     if (result == expected) {
         std::cout << "[PASS]" << std::endl;
         return true;

@@ -27,6 +27,6 @@ bool Sha256TestNewlineCharacters();
 // =============================================================================
 // Helper Functions
 // =============================================================================
-static inline bool test_helper(std::string_view expected, std::string_view result);
+bool test_helper(std::string_view expected, std::string_view result);
 
 #endif  // PROXY_SERVER_TESTS_H_
