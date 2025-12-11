@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include <vector>
+#include <iostream>
 
 namespace server {
 
@@ -147,62 +148,17 @@ namespace server {
                         }
                         continue;
                     }
-                }
 
-                // Uncomment below to see user requests outputed to the console
-                //std::cout << core::utils::bytesToReadableString(connection->receive_buffer_) << std::endl;
-                //std::cout << core::utils::bytesToHex(connection->receive_buffer_) << std::endl;
+                    // Uncomment below to see user requests outputed to the console
+                    //std::cout << core::utils::bytesToReadableString(connection->receive_buffer_) << std::endl;
+                    //std::cout << core::utils::bytesToHex(connection->receive_buffer_) << std::endl;
 
-                if (connection->role_ == core::ConnectionRole::Client) {
-                    if (!connection->protocol_) {
-                        bool known = connection->SetProtocol();
+                    if (connection->role_ == core::ConnectionRole::Client) {
+                        if (!connection->protocol_) {
+                            bool known = connection->SetProtocol();
 
-                        if (!known || !connection->protocol_) {
-                            logger_.debug("Unknown connection protocol; sending health response");
-                            HealthResponse(*connection);
-                            (void)core::UpdateEventInterest(
-                                poller_, 
-                                fd, 
-                                /*readable=*/true, 
-                                /*writable=*/true);
-                            continue;
-                        }
-                    }
-
-                    // If the connection has a protocol set, we can do work with it
-                    if (connection->protocol_) {
-
-                        // Peer connection can be null if no upstream connection yet
-                        connection->protocol_->OnReadable(connection, peer_connection, poller_);
-
-                        // Figure out which protocol it is so we know what to do
-                        switch (connection->protocol_->type()) {
-                            case core::protocol::ProtocolType::kSocks4: {
-                                auto* socks4 = dynamic_cast<core::protocol::Socks4*>(connection->protocol_.get());
-                                if (connection->peer_socket_id_ == -1 &&
-                                    socks4->state() == core::protocol::Socks4::State::Established) {
-                                        core::CreateUpstreamTCPConnection (
-                                            poller_,
-                                            logger_,
-                                            connections_,
-                                            *connection,
-                                            socks4->destination_ip(),
-                                            socks4->destination_port()
-                                        );
-                                    }
-                                break;
-                            }
-                            case core::protocol::ProtocolType::kSocks4a: {
-                                [[fallthrough]];
-                            }
-                            case core::protocol::ProtocolType::kSocks5: {
-                                [[fallthrough]];
-                            }
-                            case core::protocol::ProtocolType::kHttp: {
-                                [[fallthrough]];
-                            }
-                            default: {
-                                logger_.debug("Protocol unknown or unimplemented; sending health response");
+                            if (!known || !connection->protocol_) {
+                                logger_.debug("Unknown connection protocol; sending health response");
                                 HealthResponse(*connection);
                                 (void)core::UpdateEventInterest(
                                     poller_, 
@@ -212,30 +168,76 @@ namespace server {
                                 continue;
                             }
                         }
-                    }
-                } else if (connection->role_ == core::ConnectionRole::Upstream) {
-                    // The client's connection protocol can handle forwarding upstream
-                    if (peer_connection && peer_connection->protocol_) {
-                        peer_connection->protocol_->OnReadable(connection, peer_connection, poller_);
-                    }
-                }
 
-                // Update this connection's event interests
-                (void)core::UpdateEventInterest(
-                    poller_,
-                    fd,
-                    /*readable=*/true, // Replace with some rate limiting check
-                    /*writable=*/connection->want_write_
-                );
+                        // If the connection has a protocol set, we can do work with it
+                        if (connection->protocol_) {
 
-                // Update the peer's event interests, if we just changed them
-                if (peer_connection) {
+                            // Peer connection can be null if no upstream connection yet
+                            connection->protocol_->OnReadable(connection, peer_connection, poller_);
+
+                            // Figure out which protocol it is so we know what to do
+                            switch (connection->protocol_->type()) {
+                                case core::protocol::ProtocolType::kSocks4: {
+                                    auto* socks4 = dynamic_cast<core::protocol::Socks4*>(connection->protocol_.get());
+                                    if (connection->peer_socket_id_ == -1 &&
+                                        socks4->state() == core::protocol::Socks4::State::Established) {
+                                            core::CreateUpstreamTCPConnection (
+                                                poller_,
+                                                logger_,
+                                                connections_,
+                                                *connection,
+                                                socks4->destination_ip(),
+                                                socks4->destination_port()
+                                            );
+                                        }
+                                    break;
+                                }
+                                case core::protocol::ProtocolType::kSocks4a: {
+                                    [[fallthrough]];
+                                }
+                                case core::protocol::ProtocolType::kSocks5: {
+                                    [[fallthrough]];
+                                }
+                                case core::protocol::ProtocolType::kHttp: {
+                                    [[fallthrough]];
+                                }
+                                default: {
+                                    logger_.debug("Protocol unknown or unimplemented; sending health response");
+                                    HealthResponse(*connection);
+                                    connection->Write();
+                                    (void)core::UpdateEventInterest(
+                                        poller_, 
+                                        fd, 
+                                        /*readable=*/true, 
+                                        /*writable=*/true);
+                                    continue;
+                                }
+                            }
+                        }
+                    } else if (connection->role_ == core::ConnectionRole::Upstream) {
+                        // The client's connection protocol can handle forwarding upstream
+                        if (peer_connection && peer_connection->protocol_) {
+                            peer_connection->protocol_->OnReadable(connection, peer_connection, poller_);
+                        }
+                    }
+
+                    // Update this connection's event interests
                     (void)core::UpdateEventInterest(
                         poller_,
-                        peer_connection->id_,
+                        fd,
                         /*readable=*/true, // Replace with some rate limiting check
-                        /*writable=*/peer_connection->want_write_
+                        /*writable=*/connection->want_write_
                     );
+
+                    // Update the peer's event interests, if we just changed them
+                    if (peer_connection) {
+                        (void)core::UpdateEventInterest(
+                            poller_,
+                            peer_connection->id_,
+                            /*readable=*/true, // Replace with some rate limiting check
+                            /*writable=*/peer_connection->want_write_
+                        );
+                    }
                 }
 
                 // ----------------------------------

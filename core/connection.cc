@@ -102,7 +102,6 @@ namespace core {
             }
 
             if (n == 0) {
-                logger_.info("Peer [fd:" + std::to_string(id_) + "] closed connection gracefully");
                 closed_ = true;
                 break;
             }
